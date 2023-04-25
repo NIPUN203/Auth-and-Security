@@ -3,7 +3,10 @@ require("dotenv").config();
 const express=require("express");
 const body_parser=require("body-parser");
 const mongoose=require('mongoose');
-const encrypt=require('mongoose-encryption');
+//Encryption Packages
+// const encrypt=require('mongoose-encryption');
+// HASHING
+const md5=require("md5");
 mongoose.set('strictQuery', true);
 mongoose.connect("mongodb://localhost:27017/wikiDB",{useNewUrlParser:true,family:4});
 
@@ -18,11 +21,15 @@ const userSchema=new mongoose.Schema(
     Password:String
   });
 
-userSchema.plugin(encrypt,{secret: process.env.HASH_STRING,encryptedFields:['Password']})
+//Encryption plugin at schema
+// userSchema.plugin(encrypt,{secret: process.env.HASH_STRING,encryptedFields:['Password']})
+
+// Instead using hash function for security->hashes are very hard to decode thus we dont decode them
 const User=mongoose.model('user',userSchema);
 
 app.route("/")
 .get((req,res)=>{
+  // console.log(md5(""));
   res.render("home");
 });
 
@@ -34,7 +41,7 @@ app.route("/register")
 {
   const user=new User({
     Email:req.body.username,
-    Password:req.body.password
+    Password:md5(req.body.password)
   });
   user.save();
   res.render("login");
@@ -45,9 +52,11 @@ app.route("/login")
   res.render("login");
 })
 .post((req,res)=>{
-  User.findOne({Email:req.body.username},(err,found)=>
+  let username=req.body.username;
+  let password=req.body.password;
+  User.findOne({Email:username},(err,found)=>
   {
-      if(found.Password===req.body.password)
+      if(found.Password===md5(password))
       {
         console.log("Welcome user.");
         res.render("secrets");
