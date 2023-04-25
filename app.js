@@ -1,3 +1,5 @@
+
+require("dotenv").config();
 const express=require("express");
 const body_parser=require("body-parser");
 const mongoose=require('mongoose');
@@ -16,8 +18,7 @@ const userSchema=new mongoose.Schema(
     Password:String
   });
 
-const encrypt_string="Nipun Class Security!"
-userSchema.plugin(encrypt,{secret: encrypt_string,encryptedFields:['Password']})
+userSchema.plugin(encrypt,{secret: process.env.HASH_STRING,encryptedFields:['Password']})
 const User=mongoose.model('user',userSchema);
 
 app.route("/")
