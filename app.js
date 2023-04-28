@@ -2,11 +2,14 @@
 require("dotenv").config();
 const express=require("express");
 const body_parser=require("body-parser");
-const mongoose=require('mongoose');
 //Encryption Packages
-// const encrypt=require('mongoose-encryption');
+const encrypt=require('mongoose-encryption');
 // HASHING
 const md5=require("md5");
+//USING BCRYPT=>Generating salts
+const bcrypt=require("bcrypt");
+//Database Packages
+const mongoose=require('mongoose');
 mongoose.set('strictQuery', true);
 mongoose.connect("mongodb://localhost:27017/wikiDB",{useNewUrlParser:true,family:4});
 
@@ -39,12 +42,18 @@ app.route("/register")
 })
 .post((req,res)=>
 {
-  const user=new User({
-    Email:req.body.username,
-    Password:md5(req.body.password)
-  });
-  user.save();
-  res.render("login");
+  let salt_rounds=10;
+  bcrypt.hash(req.body.password,salt_rounds, function( err, hash){
+
+    const user=new User({
+      Email:req.body.username,
+      Password:hash
+      // Password:md5(req.body.password)
+    });
+    user.save();
+    res.render("login");
+
+});
 });
 
 app.route("/login")
@@ -56,21 +65,26 @@ app.route("/login")
   let password=req.body.password;
   User.findOne({Email:username},(err,found)=>
   {
-      if(found.Password===md5(password))
-      {
-        console.log("Welcome user.");
-        res.render("secrets");
-      }
-      else if(err)
-      {
-        console.log("Error Occurred.");
-        res.render("home");
-      }
-      else
-      {
-        console.log("You're not a user, register to become one.")
-        res.render("register");
-      }
+    var hash=found.Password;
+    bcrypt.compare( password, hash,(err,result)=>
+  {
+    if(result==true)
+    {
+      console.log("Welcome user.");
+      res.render("secrets");
+    }
+    else if(err)
+    {
+      console.log("Error Occurred.");
+      res.render("home");
+    }
+    else
+    {
+      console.log("You're not a user, register to become one.")
+      res.render("register");
+    }
+  });
+      // if(found.Password===md5(password))
   })
 })
 
